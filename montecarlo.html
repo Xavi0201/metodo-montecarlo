@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estimación de π con Monte Carlo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0b1220;
+      color: #e2e8f0;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    canvas {
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #0f172a;
+      display: block;
+      margin: 20px auto;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    button, input {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+    button {
+      background-color: #22c55e;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #16a34a;
+    }
+    input[type=number] {
+      width: 100px;
+      text-align: center;
+    }
+    .info {
+      margin-top: 10px;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Estimación de π por Método de Monte Carlo</h1>
+  <div class="controls">
+    <button id="start">Iniciar</button>
+    <button id="pause">Pausar</button>
+    <button id="reset">Reiniciar</button>
+    <label>Muestras: <input type="number" id="samples" value="100000" min="1000" step="1000"></label>
+  </div>
+  <canvas id="canvas" width="400" height="400"></canvas>
+  <div class="info">
+    π estimado: <span id="pi">0</span> | Error: <span id="error">0</span><br>
+    Puntos generados: <span id="n">0</span>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const startBtn = document.getElementById('start');
+    const pauseBtn = document.getElementById('pause');
+    const resetBtn = document.getElementById('reset');
+    const samplesInput = document.getElementById('samples');
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const r = w / 2 - 10;
+    const center = w / 2;
+
+    let running = false;
+    let n = 0, inside = 0;
+    let targetN = parseInt(samplesInput.value);
+
+    function drawBase() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(center, center, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function step(batch = 500) {
+      for (let i = 0; i < batch; i++) {
+        const x = Math.random() * (w - 20) + 10;
+        const y = Math.random() * (h - 20) + 10;
+        const dx = x - center;
+        const dy = y - center;
+        const inCircle = dx * dx + dy * dy <= r * r;
+        ctx.beginPath();
+        ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = inCircle ? '#22c55e' : '#ef4444';
+        ctx.fill();
+        if (inCircle) inside++;
+        n++;
+      }
+      updateStats();
+    }
+
+    function updateStats() {
+      const piEst = 4 * inside / n;
+      document.getElementById('pi').textContent = piEst.toFixed(6);
+      document.getElementById('error').textContent = Math.abs(Math.PI - piEst).toExponential(2);
+      document.getElementById('n').textContent = n;
+    }
+
+    function loop() {
+      if (!running) return;
+      if (n >= targetN) {
+        running = false;
+        return;
+      }
+      step(800);
+      requestAnimationFrame(loop);
+    }
+
+    startBtn.onclick = () => {
+      running = true;
+      targetN = parseInt(samplesInput.value);
+      loop();
+    };
+
+    pauseBtn.onclick = () => running = false;
+
+    resetBtn.onclick = () => {
+      running = false;
+      n = inside = 0;
+      drawBase();
+      updateStats();
+    };
+
+    drawBase();
+  </script>
+</body>
+</html>
